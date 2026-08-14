@@ -59,6 +59,10 @@ class SpeechService {
         break;
       }
     }
+    // Android'ning tanib oluvchisi ba'zan yakuniy natijada so'z oxirini
+    // kesadi ("salom" -> "salo"). Buni oldini olish uchun eng uzun (to'liq)
+    // oraliq natijani saqlab, yakuniy natija undan qisqa bo'lsa uni ishlatamiz.
+    String best = '';
     try {
       await _speech.listen(
         listenOptions: SpeechListenOptions(
@@ -69,7 +73,14 @@ class SpeechService {
           cancelOnError: true,
         ),
         onResult: (result) {
-          onResult(result.recognizedWords, result.finalResult);
+          final text = result.recognizedWords;
+          if (text.length > best.length) best = text;
+          if (result.finalResult) {
+            final finalText = text.trim().isNotEmpty ? text.trim() : best.trim();
+            onResult(finalText, true);
+          } else {
+            onResult(text, false);
+          }
         },
       );
     } catch (_) {
